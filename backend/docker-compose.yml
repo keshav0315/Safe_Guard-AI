@@ -1,0 +1,123 @@
+# =============================================================================
+# SafeGuard AI — Docker Compose Orchestration
+# Web (Django), Database (PostgreSQL 16), Cache & Queue (Redis 7), Celery Worker & Beat
+# =============================================================================
+
+version: '3.9'
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 16 — Primary Relational Database
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: safeguard_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-safeguard_db}
+      POSTGRES_USER: ${DB_USER:-safeguard_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-safeguard_secure_password_2026}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-safeguard_user} -d ${DB_NAME:-safeguard_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Redis 7 — Cache & Celery Task Broker
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: safeguard_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Web API — Django REST Framework (SafeGuard AI Backend)
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: safeguard_api
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn --chdir /app/safeguard_backend --bind 0.0.0.0:8000 --workers 3 --timeout 60 config.wsgi:application"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.development
+
+  # ---------------------------------------------------------------------------
+  # Celery Worker — Asynchronous Emergency Notifications & AI Background Tasks
+  # ---------------------------------------------------------------------------
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: safeguard_celery_worker
+    restart: unless-stopped
+    command: celery -A safeguard_backend.infrastructure.celery.app worker --loglevel=info --concurrency=2
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.development
+
+  # ---------------------------------------------------------------------------
+  # Celery Beat — Periodic Scheduled Tasks
+  # ---------------------------------------------------------------------------
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: safeguard_celery_beat
+    restart: unless-stopped
+    command: celery -A safeguard_backend.infrastructure.celery.app beat --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.development
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:

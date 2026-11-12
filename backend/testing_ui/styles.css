@@ -1,0 +1,165 @@
+/* SafeGuard AI — Test Suite Styles */
+
+:root {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-card: #1e293b;
+  --border-color: #334155;
+  --text-primary: #f8fafc;
+  --text-muted: #94a3b8;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --danger: #ef4444;
+  --success: #10b981;
+  --warning: #f59e0b;
+}
+
+/* Light Theme Variables */
+body.light-theme {
+  --bg-primary: #f1f5f9;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --border-color: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-muted: #64748b;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+}
+body.light-theme ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Monospace for Code & JSON */
+.font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* JSON Syntax Highlighting */
+.json-key {
+  color: #7dd3fc;
+  font-weight: 500;
+}
+.json-string {
+  color: #86efac;
+}
+.json-number {
+  color: #fde047;
+}
+.json-boolean {
+  color: #f472b6;
+  font-weight: 600;
+}
+.json-null {
+  color: #94a3b8;
+  font-style: italic;
+}
+body.light-theme .json-key {
+  color: #0369a1;
+}
+body.light-theme .json-string {
+  color: #15803d;
+}
+body.light-theme .json-number {
+  color: #b45309;
+}
+body.light-theme .json-boolean {
+  color: #be185d;
+}
+body.light-theme .json-null {
+  color: #64748b;
+}
+
+/* Animations */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(1.05); }
+}
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(110%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes fadeOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(110%);
+    opacity: 0;
+  }
+}
+
+.toast-enter {
+  animation: slideInRight 0.3s ease-out forwards;
+}
+.toast-exit {
+  animation: fadeOutRight 0.3s ease-in forwards;
+}
+
+/* Tab active state indicators */
+.tab-active {
+  border-color: #6366f1 !important;
+  color: #6366f1 !important;
+  background-color: rgba(99, 102, 241, 0.08);
+}
+body.light-theme .tab-active {
+  background-color: rgba(99, 102, 241, 0.1);
+}
+
+/* Pill status glow */
+.status-pill-online {
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+.status-pill-offline {
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+.status-pill-warn {
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+/* SOS Button pulsing red danger */
+.btn-sos {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.39);
+}
+.btn-sos:hover {
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+  transform: translateY(-1px);
+}
+.btn-sos:active {
+  transform: translateY(1px);
+}

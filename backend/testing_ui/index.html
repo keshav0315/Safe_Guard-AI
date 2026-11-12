@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafeGuard AI — API Interactive Testing Suite</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen flex flex-col transition-colors duration-200">
+
+  <!-- Top Navigation & Global Controls -->
+  <header class="border-b border-slate-700/60 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-rose-500 flex items-center justify-center shadow-md shadow-indigo-500/20">
+          <i data-lucide="shield-alert" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-lg text-white tracking-wide">SafeGuard AI</span>
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">API v1 Test Lab</span>
+          </div>
+          <p class="text-xs text-slate-400">Interactive Developer Testing Dashboard</p>
+        </div>
+      </div>
+
+      <!-- Backend Connection Settings -->
+      <div class="flex flex-wrap items-center gap-2 text-sm bg-slate-800/80 p-1.5 rounded-xl border border-slate-700/60">
+        <div class="flex items-center space-x-1.5 px-2">
+          <i data-lucide="server" class="w-4 h-4 text-slate-400"></i>
+          <span class="text-xs text-slate-300 font-medium">Base URL:</span>
+        </div>
+        <input 
+          type="text" 
+          id="baseUrlInput" 
+          value="http://127.0.0.1:8000" 
+          class="bg-slate-900 text-slate-100 text-xs px-3 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500 w-52 font-mono"
+          placeholder="http://127.0.0.1:8000"
+        />
+        <button 
+          id="pingBtn" 
+          title="Check Server Health"
+          class="flex items-center space-x-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all active:scale-95"
+        >
+          <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+          <span>Ping</span>
+        </button>
+
+        <!-- Status Pill -->
+        <div id="backendStatusPill" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-700/50 text-slate-300 border border-slate-600/50">
+          <span id="backendStatusDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="backendStatusText">Checking...</span>
+        </div>
+      </div>
+
+      <!-- Right Auth Quick Status & Theme -->
+      <div class="flex items-center space-x-2">
+        <div id="authStatusBadge" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-800/70 border border-slate-700/60 text-xs text-slate-300">
+          <i data-lucide="user" class="w-4 h-4 text-slate-400"></i>
+          <span id="authStatusUser" class="font-medium truncate max-w-[140px]">Not logged in</span>
+          <button id="quickLogoutBtn" title="Log Out / Clear Token" class="hidden text-rose-400 hover:text-rose-300 ml-1">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <!-- Documentation Links -->
+        <a 
+          id="swaggerLink" 
+          href="http://127.0.0.1:8000/api/docs/" 
+          target="_blank" 
+          class="p-2 rounded-lg bg-slate-800/70 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white transition text-xs flex items-center space-x-1"
+          title="Open Swagger Docs"
+        >
+          <i data-lucide="file-code" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Docs</span>
+        </a>
+
+        <!-- Theme Toggle -->
+        <button 
+          id="themeToggleBtn" 
+          title="Toggle Dark/Light Mode"
+          class="p-2 rounded-lg bg-slate-800/70 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white transition"
+        >
+          <i data-lucide="sun" id="themeIcon" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto p-4 sm:p-6 w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- LEFT COLUMN: Test Suite Tabs (7 cols) -->
+    <section class="lg:col-span-7 flex flex-col space-y-4">
+      
+      <!-- Tab Navigation -->
+      <nav class="flex border-b border-slate-800 bg-slate-900/60 rounded-xl p-1 gap-1 overflow-x-auto">
+        <button data-tab="tab-health" class="tab-btn tab-active flex items-center space-x-2 px-3 py-2 text-xs font-semibold rounded-lg text-slate-300 hover:text-white transition whitespace-nowrap">
+          <i data-lucide="heart-pulse" class="w-4 h-4"></i>
+          <span>Health</span>
+        </button>
+        <button data-tab="tab-auth" class="tab-btn flex items-center space-x-2 px-3 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition whitespace-nowrap">
+          <i data-lucide="key" class="w-4 h-4"></i>
+          <span>Auth & Tokens</span>
+        </button>
+        <button data-tab="tab-profile" class="tab-btn flex items-center space-x-2 px-3 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition whitespace-nowrap">
+          <i data-lucide="user-check" class="w-4 h-4"></i>
+          <span>Profile</span>
+        </button>
+        <button data-tab="tab-sos" class="tab-btn flex items-center space-x-2 px-3 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition whitespace-nowrap">
+          <i data-lucide="siren" class="w-4 h-4 text-rose-400"></i>
+          <span class="text-rose-400">SOS Trigger</span>
+        </button>
+        <button data-tab="tab-custom" class="tab-btn flex items-center space-x-2 px-3 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition whitespace-nowrap">
+          <i data-lucide="terminal" class="w-4 h-4"></i>
+          <span>Custom Request</span>
+        </button>
+      </nav>
+
+      <!-- TAB 1: HEALTH CHECK -->
+      <div id="tab-health" class="tab-pane block space-y-4">
+        <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                <i data-lucide="activity" class="w-5 h-5 text-indigo-400"></i>
+                Backend Health & Environment
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Quick verification of API readiness, database connection, and endpoint latency.</p>
+            </div>
+            <span class="text-xs px-2.5 py-1 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono">GET /api/v1/health/</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/40">
+              <span class="text-xs text-slate-400 block">Service Status</span>
+              <span id="healthCardStatus" class="text-sm font-semibold text-slate-200 mt-1 block">Unknown</span>
+            </div>
+            <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/40">
+              <span class="text-xs text-slate-400 block">Response Latency</span>
+              <span id="healthCardLatency" class="text-sm font-semibold text-slate-200 mt-1 block">-- ms</span>
+            </div>
+            <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/40">
+              <span class="text-xs text-slate-400 block">API Version</span>
+              <span id="healthCardVersion" class="text-sm font-semibold text-slate-200 mt-1 block">v1.0.0</span>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-700/50">
+            <button id="runHealthCheckBtn" class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium px-4 py-2 rounded-lg transition active:scale-95 shadow">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+              <span>Test Health Endpoint</span>
+            </button>
+            <a id="openSwaggerBtn" href="http://127.0.0.1:8000/api/docs/" target="_blank" class="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium px-4 py-2 rounded-lg transition">
+              <i data-lucide="external-link" class="w-4 h-4"></i>
+              <span>Interactive Swagger UI</span>
+            </a>
+            <a id="openAdminBtn" href="http://127.0.0.1:8000/admin/" target="_blank" class="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium px-4 py-2 rounded-lg transition">
+              <i data-lucide="settings" class="w-4 h-4"></i>
+              <span>Django Admin</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Quick Info Box -->
+        <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 text-xs text-slate-400 space-y-2">
+          <div class="font-medium text-slate-300 flex items-center space-x-1.5">
+            <i data-lucide="info" class="w-4 h-4 text-indigo-400"></i>
+            <span>Development Tips</span>
+          </div>
+          <ul class="list-disc list-inside space-y-1 text-slate-400">
+            <li>Backend should be running via <code class="text-indigo-300 bg-slate-900/80 px-1.5 py-0.5 rounded">python manage.py runserver</code> on port 8000.</li>
+            <li>CORS is enabled for development via <code class="text-indigo-300 bg-slate-900/80 px-1.5 py-0.5 rounded">CORS_ALLOW_ALL_ORIGINS=True</code>.</li>
+            <li>All tokens are automatically attached to authenticated endpoints.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- TAB 2: AUTH & TOKENS -->
+      <div id="tab-auth" class="tab-pane hidden space-y-4">
+        
+        <!-- Registration Card -->
+        <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                <i data-lucide="user-plus" class="w-5 h-5 text-emerald-400"></i>
+                User Registration
+              </h2>
+              <p class="text-xs text-slate-400">Register a new user account in the SafeGuard system.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="fillSampleRegisterBtn" class="text-xs text-indigo-400 hover:text-indigo-300 underline font-medium">
+                Auto-fill Sample Data
+              </button>
+              <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">POST /api/v1/auth/register/</span>
+            </div>
+          </div>
+
+          <form id="registerForm" class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Email <span class="text-rose-400">*</span></label>
+                <input type="email" id="regEmail" required placeholder="priya.sharma@example.com" class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Display Name <span class="text-rose-400">*</span></label>
+                <input type="text" id="regDisplayName" required placeholder="Priya Sharma" class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Phone Number</label>
+                <input type="tel" id="regPhone" placeholder="+919876543210" class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Preferred Language</label>
+                <select id="regLang" class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+                  <option value="en">English (en)</option>
+                  <option value="hi">Hindi (hi)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Password <span class="text-rose-400">*</span></label>
+                <input type="password" id="regPassword" required minlength="8" placeholder="••••••••" class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Confirm Password <span class="text-rose-400">*</span></label>
+                <input type="password" id="regPasswordConfirm" required minlength="8" placeholder="••••••••" class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+              </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+              <button type="submit" class="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium px-4 py-2 rounded-lg transition active:scale-95 shadow">
+                <i data-lucide="user-plus" class="w-4 h-4"></i>
+                <span>Register User</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                <i data-lucide="log-in" class="w-5 h-5 text-indigo-400"></i>
+                User Login (Obtain JWT)
+              </h2>
+              <p class="text-xs text-slate-400">Authenticates credentials and issues Access & Refresh JWT pairs.</p>
+            </div>
+            <span class="text-xs px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono">POST /api/v1/auth/token/</span>
+          </div>
+
+          <form id="loginForm" class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Email <span class="text-rose-400">*</span></label>
+                <input type="email" id="loginEmail" required placeholder="priya.sharma@example.com" class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Password <span class="text-rose-400">*</span></label>
+                <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+              <label class="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer">
+                <input type="checkbox" id="rememberMe" checked class="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                <span>Save token to browser localStorage</span>
+              </label>
+              <button type="submit" class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium px-4 py-2 rounded-lg transition active:scale-95 shadow">
+                <i data-lucide="key-round" class="w-4 h-4"></i>
+                <span>Login & Store Token</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Token Management & Inspection Card -->
+        <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                <i data-lucide="shield" class="w-5 h-5 text-amber-400"></i>
+                Active JWT Tokens & Lifecycle
+              </h2>
+              <p class="text-xs text-slate-400">Inspect payload, rotate refresh tokens, or blacklist on logout.</p>
+            </div>
+            <span id="tokenExpiryBadge" class="text-xs px-2.5 py-1 rounded-md bg-slate-700 text-slate-300 font-mono">No Active Token</span>
+          </div>
+
+          <!-- Access Token View -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-300 font-medium">Access Token (Bearer):</span>
+              <button id="copyAccessTokenBtn" class="text-indigo-400 hover:text-indigo-300 flex items-center space-x-1">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span>Copy</span>
+              </button>
+            </div>
+            <textarea id="accessTokenDisplay" rows="2" readonly placeholder="Access token will appear here after login..." class="w-full bg-slate-900 text-indigo-300 font-mono text-xs p-2.5 rounded-lg border border-slate-700 focus:outline-none resize-none"></textarea>
+          </div>
+
+          <!-- Refresh Token View -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-300 font-medium">Refresh Token:</span>
+              <button id="copyRefreshTokenBtn" class="text-indigo-400 hover:text-indigo-300 flex items-center space-x-1">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span>Copy</span>
+              </button>
+            </div>
+            <textarea id="refreshTokenDisplay" rows="2" readonly placeholder="Refresh token will appear here after login..." class="w-full bg-slate-900 text-amber-300 font-mono text-xs p-2.5 rounded-lg border border-slate-700 focus:outline-none resize-none"></textarea>
+          </div>
+
+          <!-- Decoded Token Details -->
+          <div id="decodedTokenBox" class="hidden bg-slate-900/70 p-3 rounded-xl border border-slate-700/50 text-xs font-mono space-y-1 text-slate-300">
+            <div class="text-slate-400 font-sans font-medium text-xs mb-1 flex items-center justify-between">
+              <span>Decoded JWT Payload</span>
+              <span id="tokenTimerText" class="text-amber-400"></span>
+            </div>
+            <div id="decodedPayloadContent" class="overflow-x-auto text-[11px]"></div>
+          </div>
+
+          <!-- Token Actions -->
+          <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-700/50">
+            <button id="refreshTokenBtn" class="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-medium px-3.5 py-2 rounded-lg transition active:scale-95 shadow">
+              <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+              <span>Refresh Token (POST /auth/token/refresh/)</span>
+            </button>
+            <button id="blacklistTokenBtn" class="flex items-center space-x-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium px-3.5 py-2 rounded-lg transition active:scale-95 shadow">
+              <i data-lucide="ban" class="w-3.5 h-3.5"></i>
+              <span>Blacklist / Logout (POST /auth/token/blacklist/)</span>
+            </button>
+            <button id="clearTokensBtn" class="flex items-center space-x-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium px-3.5 py-2 rounded-lg transition">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              <span>Clear State</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TAB 3: USER PROFILE -->
+      <div id="tab-profile" class="tab-pane hidden space-y-4">
+        
+        <!-- Profile Header / Quick Fetch -->
+        <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                <i data-lucide="user" class="w-5 h-5 text-indigo-400"></i>
+                User Profile Management
+              </h2>
+              <p class="text-xs text-slate-400">Retrieve and update current authenticated user information.</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">GET/PATCH /api/v1/users/me/</span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <button id="fetchProfileBtn" class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium px-4 py-2 rounded-lg transition active:scale-95 shadow">
+              <i data-lucide="download-cloud" class="w-4 h-4"></i>
+              <span>Fetch Current Profile (GET)</span>
+            </button>
+            <span id="profileAuthIndicator" class="text-xs text-slate-400 flex items-center space-x-1">
+              <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+              <span>Needs Bearer Token</span>
+            </span>
+          </div>
+
+          <!-- Profile Details Card (Read View) -->
+          <div id="profileDetailsCard" class="hidden bg-slate-900/70 p-4 rounded-xl border border-slate-700/50 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-full bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-300 font-bold text-lg" id="profileAvatar">
+                  U
+                </div>
+                <div>
+                  <h3 class="text-sm font-semibold text-white" id="profileNameDisplay">User Name</h3>
+                  <p class="text-xs text-slate-400" id="profileEmailDisplay">user@example.com</p>
+                </div>
+              </div>
+              <span id="profileRoleBadge" class="text-xs px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase font-mono">USER</span>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <span class="text-slate-400 block">Phone</span>
+                <span id="profilePhoneDisplay" class="text-slate-200 font-medium font-mono">--</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block">Language</span>
+                <span id="profileLangDisplay" class="text-slate-200 font-medium">--</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block">Guardian Managed</span>
+                <span id="profileGuardianDisplay" class="text-slate-200 font-medium">--</span>
+              </div>
+            </div>
+
+            <div class="border-t border-slate-800 pt-2 text-xs space-y-1">
+              <span class="text-slate-400 block">Bio:</span>
+              <p id="profileBioDisplay" class="text-slate-300 italic">No bio provided</p>
+            </div>
+
+            <div class="border-t border-slate-800 pt-2 text-xs space-y-1">
+              <span class="text-slate-400 block">Emergency Message:</span>
+              <p id="profileEmergencyMsgDisplay" class="text-rose-300 font-medium">No emergency message configured</p>
+            </div>
+          </div>
+
+          <!-- Edit Profile Form (PATCH) -->
+          <form id="profileUpdateForm" class="space-y-3 pt-3 border-t border-slate-700/50">
+            <div class="font-medium text-xs text-slate-300 flex items-center gap-1.5">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5 text-indigo-400"></i>
+              <span>Update Profile (PATCH /api/v1/users/me/)</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Display Name</label>
+                <input type="text" id="editDisplayName" placeholder="Priya Sharma" class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Phone Number</label>
+                <input type="tel" id="editPhone" placeholder="+919876543210" class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Preferred Language</label>
+                <select id="editLang" class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+                  <option value="en">English (en)</option>
+                  <option value="hi">Hindi (hi)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Bio</label>
+                <input type="text" id="editBio" placeholder="Working professional in New Delhi" class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Emergency Message (Broadcasted to SOS contacts)</label>
+              <textarea id="editEmergencyMessage" rows="2" placeholder="I need immediate assistance! Please check my real-time location." class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500"></textarea>
+            </div>
+
+            <div class="flex justify-end">
+              <button type="submit" class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium px-4 py-2 rounded-lg transition active:scale-95 shadow">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                <span>Save Profile Changes</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- TAB 4: SOS TRIGGER -->
+      <div id="tab-sos" class="tab-pane hidden space-y-4">
+        <div class="bg-slate-800/60 border border-rose-900/40 rounded-2xl p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                <i data-lucide="siren" class="w-5 h-5 text-rose-500 animate-bounce"></i>
+                Emergency SOS Alert Simulator
+              </h2>
+              <p class="text-xs text-slate-400">Simulate distress panic triggers with live or preset GPS coordinates.</p>
+            </div>
+            <span class="text-xs px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-mono">POST /api/v1/emergencies/sos/</span>
+          </div>
+
+          <form id="sosForm" class="space-y-4">
+            <!-- Event Type & Idempotency Key -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Event Type <span class="text-rose-400">*</span></label>
+                <select id="sosEventType" class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-rose-500 font-medium">
+                  <option value="test">Test Alert (test)</option>
+                  <option value="sos" selected>SOS Alert (sos)</option>
+                  <option value="panic">Panic Button (panic)</option>
+                </select>
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-xs font-medium text-slate-300">Idempotency Key <span class="text-rose-400">*</span></label>
+                  <button type="button" id="regenerateIdempotencyBtn" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center space-x-1">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                    <span>Generate UUID</span>
+                  </button>
+                </div>
+                <input type="text" id="sosIdempotencyKey" required class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-rose-500 font-mono">
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Notes / Description (Optional)</label>
+              <input type="text" id="sosNotes" placeholder="Testing SOS workflow from frontend test suite" class="w-full bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-rose-500">
+            </div>
+
+            <!-- Coordinates Section -->
+            <div class="bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/60 space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-xs font-medium text-slate-300 flex items-center space-x-1.5">
+                  <i data-lucide="map-pin" class="w-4 h-4 text-rose-400"></i>
+                  <span>GPS Location Coordinates</span>
+                </span>
+                
+                <!-- Coordinate Preset Buttons -->
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <button type="button" data-preset="delhi" class="loc-preset-btn text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+                    📍 Delhi
+                  </button>
+                  <button type="button" data-preset="mumbai" class="loc-preset-btn text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+                    📍 Mumbai
+                  </button>
+                  <button type="button" data-preset="bengaluru" class="loc-preset-btn text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+                    📍 Bengaluru
+                  </button>
+                  <button type="button" id="getCurrentGeoBtn" class="text-[11px] px-2 py-1 rounded bg-indigo-600/40 hover:bg-indigo-600/60 text-indigo-200 border border-indigo-500/40 transition flex items-center space-x-1">
+                    <i data-lucide="crosshair" class="w-3 h-3"></i>
+                    <span>Device GPS</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-0.5">Latitude (-90 to 90)</label>
+                  <input type="number" step="any" id="sosLatitude" value="28.613939" placeholder="28.613939" class="w-full bg-slate-950 text-slate-100 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 font-mono focus:border-rose-500">
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-0.5">Longitude (-180 to 180)</label>
+                  <input type="number" step="any" id="sosLongitude" value="77.209021" placeholder="77.209021" class="w-full bg-slate-950 text-slate-100 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 font-mono focus:border-rose-500">
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-0.5">Accuracy (meters)</label>
+                  <input type="number" step="any" id="sosAccuracy" value="12.5" placeholder="12.5" class="w-full bg-slate-950 text-slate-100 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 font-mono focus:border-rose-500">
+                </div>
+              </div>
+            </div>
+
+            <!-- Trigger Button -->
+            <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <span class="text-xs text-slate-400">
+                ⚠️ Requires Bearer authentication. Idempotency guarantees safe retry.
+              </span>
+              <button type="submit" class="w-full sm:w-auto btn-sos text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-xl flex items-center justify-center space-x-2">
+                <i data-lucide="alert-octagon" class="w-4 h-4"></i>
+                <span>TRIGGER SOS ALERT</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- History Quick Link -->
+          <div class="pt-3 border-t border-slate-700/60 flex items-center justify-between text-xs">
+            <span class="text-slate-400">Emergency History Endpoint</span>
+            <button id="fetchEmergencyHistoryBtn" class="flex items-center space-x-1.5 text-indigo-400 hover:text-indigo-300 font-medium">
+              <i data-lucide="history" class="w-3.5 h-3.5"></i>
+              <span>Fetch History (GET /api/v1/emergencies/)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: CUSTOM REQUEST BUILDER -->
+      <div id="tab-custom" class="tab-pane hidden space-y-4">
+        <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 shadow-sm space-y-4">
+          <div>
+            <h2 class="text-base font-semibold text-white flex items-center gap-2">
+              <i data-lucide="terminal" class="w-5 h-5 text-indigo-400"></i>
+              Free-form API Explorer
+            </h2>
+            <p class="text-xs text-slate-400">Test any SafeGuard endpoint (Contacts, Audit, Notifications, etc.) with custom parameters.</p>
+          </div>
+
+          <form id="customReqForm" class="space-y-3">
+            <div class="flex gap-2">
+              <select id="customMethod" class="bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500 font-bold w-28">
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="PATCH">PATCH</option>
+                <option value="DELETE">DELETE</option>
+              </select>
+              <input type="text" id="customPath" value="/api/v1/contacts/" placeholder="/api/v1/contacts/" class="flex-1 bg-slate-900 text-slate-100 text-xs px-3 py-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500 font-mono">
+              <button type="submit" class="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition active:scale-95 shadow">
+                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                <span>Send</span>
+              </button>
+            </div>
+
+            <!-- Quick Path Suggestion Chips -->
+            <div class="flex flex-wrap items-center gap-1.5 text-xs">
+              <span class="text-slate-400 text-[11px]">Quick presets:</span>
+              <button type="button" data-fill-path="/api/v1/contacts/" class="custom-chip text-[11px] px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700">
+                Contacts List
+              </button>
+              <button type="button" data-fill-path="/api/v1/locations/snapshots/" class="custom-chip text-[11px] px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700">
+                Location Snapshots
+              </button>
+              <button type="button" data-fill-path="/api/v1/notifications/" class="custom-chip text-[11px] px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700">
+                Notifications
+              </button>
+              <button type="button" data-fill-path="/api/v1/audit/" class="custom-chip text-[11px] px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700">
+                Audit Logs
+              </button>
+            </div>
+
+            <div class="flex items-center space-x-2 pt-1">
+              <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+                <input type="checkbox" id="customAttachToken" checked class="rounded border-slate-700 text-indigo-600 bg-slate-900">
+                <span>Attach Bearer Token in Authorization header</span>
+              </label>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-xs font-medium text-slate-300">JSON Request Body (POST/PUT/PATCH)</label>
+                <button type="button" id="prettifyJsonBtn" class="text-xs text-indigo-400 hover:text-indigo-300">Prettify JSON</button>
+              </div>
+              <textarea id="customBody" rows="5" placeholder='{\n  "name": "Jane Doe"\n}' class="w-full bg-slate-900 text-slate-100 font-mono text-xs p-3 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500"></textarea>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: Live Inspector (5 cols) -->
+    <aside class="lg:col-span-5 flex flex-col space-y-4">
+      
+      <div class="bg-slate-800/80 border border-slate-700/70 rounded-2xl p-4 shadow-lg flex flex-col h-[calc(100vh-140px)] sticky top-20">
+        
+        <!-- Inspector Top Bar -->
+        <div class="border-b border-slate-700/60 pb-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
+              <i data-lucide="radio" class="w-4 h-4 text-indigo-400"></i>
+              <span>Live Response Inspector</span>
+            </span>
+            <div class="flex items-center space-x-2">
+              <span id="inspectMethodPill" class="text-[11px] font-bold px-2 py-0.5 rounded uppercase font-mono bg-slate-700 text-slate-300">GET</span>
+              <span id="inspectStatusPill" class="text-[11px] font-bold px-2.5 py-0.5 rounded uppercase font-mono bg-slate-700 text-slate-300">Ready</span>
+              <span id="inspectLatencyPill" class="text-[11px] font-mono text-slate-400">0 ms</span>
+            </div>
+          </div>
+
+          <!-- URL Ribbon -->
+          <div class="flex items-center space-x-2 text-xs font-mono bg-slate-900/90 px-2.5 py-1.5 rounded-lg border border-slate-700/40 overflow-hidden">
+            <span class="text-slate-400 shrink-0 select-none">URL:</span>
+            <span id="inspectUrlText" class="text-slate-200 truncate select-all">None</span>
+          </div>
+
+          <!-- Sub Tabs: Response Body vs Request Payload vs Headers -->
+          <div class="flex border-b border-slate-700/40 gap-4 pt-1 text-xs">
+            <button id="tabBtnBody" class="font-semibold text-indigo-400 border-b-2 border-indigo-500 pb-1">Response Body</button>
+            <button id="tabBtnReq" class="text-slate-400 hover:text-slate-200 pb-1">Request Sent</button>
+            <button id="tabBtnHeaders" class="text-slate-400 hover:text-slate-200 pb-1">Headers</button>
+            <button id="tabBtnHistory" class="text-slate-400 hover:text-slate-200 pb-1 ml-auto flex items-center space-x-1">
+              <i data-lucide="clock" class="w-3 h-3"></i>
+              <span>History</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Inspector Content Area -->
+        <div class="flex-1 overflow-auto relative py-2">
+          
+          <!-- View 1: Response Body -->
+          <div id="viewBody" class="h-full">
+            <div class="absolute right-2 top-2 z-10 flex gap-1">
+              <button id="copyJsonBtn" title="Copy JSON" class="p-1.5 rounded-md bg-slate-700/80 hover:bg-slate-600 text-slate-300 hover:text-white transition text-xs flex items-center space-x-1">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span class="text-[11px]">Copy</span>
+              </button>
+            </div>
+            <pre id="jsonViewer" class="font-mono text-xs text-slate-300 whitespace-pre-wrap break-all h-full overflow-auto bg-slate-950/80 p-3 rounded-xl border border-slate-800">No requests sent yet. Click any test action to inspect results.</pre>
+          </div>
+
+          <!-- View 2: Request Sent -->
+          <div id="viewReq" class="hidden h-full">
+            <pre id="requestViewer" class="font-mono text-xs text-slate-300 whitespace-pre-wrap break-all h-full overflow-auto bg-slate-950/80 p-3 rounded-xl border border-slate-800">Request details will appear here.</pre>
+          </div>
+
+          <!-- View 3: Headers -->
+          <div id="viewHeaders" class="hidden h-full">
+            <pre id="headersViewer" class="font-mono text-xs text-slate-300 whitespace-pre-wrap break-all h-full overflow-auto bg-slate-950/80 p-3 rounded-xl border border-slate-800">Response headers will appear here.</pre>
+          </div>
+
+          <!-- View 4: Request History -->
+          <div id="viewHistory" class="hidden h-full space-y-2 overflow-auto">
+            <div class="flex items-center justify-between text-xs text-slate-400 pb-1 border-b border-slate-800">
+              <span>Recent Calls (Click to inspect)</span>
+              <button id="clearHistoryBtn" class="text-rose-400 hover:text-rose-300">Clear</button>
+            </div>
+            <div id="historyList" class="space-y-1.5 text-xs">
+              <p class="text-slate-500 italic py-4 text-center">No history yet</p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- Toast Notification Center -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- JavaScript logic -->
+  <script src="app.js"></script>
+</body>
+</html>
